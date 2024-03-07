@@ -34,17 +34,53 @@ public class LanguageModel {
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
 		// Your code goes here
+		In newReader = new In(fileName);
+
+        String read = newReader.readAll();
+
+        for (int i = 0; i < read.length() - windowLength ; ++i) {
+            String key = read.substring(i, i + windowLength);
+            if (CharDataMap.get(key) == null) {
+                CharDataMap.put(key, new List());
+            }
+            CharDataMap.get(key).update(read.charAt(i + windowLength));
+            calculateProbabilities(CharDataMap.get(key));
+        }
 	}
 
     // Computes and sets the probabilities (p and cp fields) of all the
 	// characters in the given list. */
 	public void calculateProbabilities(List probs) {				
 		// Your code goes here
-	}
+        int totalCharCounter = 0;
+
+        ListIterator lIterator = probs.listIterator(0);
+        while (lIterator != null && lIterator.hasNext()) {
+            totalCharCounter += lIterator.next().count;
+        }
+
+        double cp = 0.0;
+        for (int i = 0; i < probs.getSize(); ++i) {
+            CharData currentCharData = probs.get(i);
+            currentCharData.p = (double)currentCharData.count / totalCharCounter;
+            currentCharData.cp = (double)cp + currentCharData.p;
+            cp += currentCharData.p;
+        }
+    }
+
 
     // Returns a random character from the given probabilities list.
 	public char getRandomChar(List probs) {
 		// Your code goes here
+        double cpValue = randomGenerator.nextDouble();
+        CharData[] charDataArray = probs.toArray();
+
+        for (CharData cd : charDataArray) {
+            if (cd.cp > cpValue) {
+                return cd.chr;
+            }
+        }
+        return ' ';
 	}
 
     /**
@@ -56,6 +92,13 @@ public class LanguageModel {
 	 */
 	public String generate(String initialText, int textLength) {
 		// Your code goes here
+        StringBuilder strBuild = new StringBuilder();
+        strBuild.append(initialText);
+        while (strBuild.length() < textLength + initialText.length()) {
+            String key = strBuild.substring(strBuild.length() - windowLength);
+            strBuild.append(getRandomChar(CharDataMap.get(key)));
+        }
+        return strBuild.toString();
 	}
 
     /** Returns a string representing the map of this language model. */
